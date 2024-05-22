@@ -1,19 +1,21 @@
-import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import * as sns from 'aws-cdk-lib/aws-sns';
-import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
-import { Construct } from 'constructs';
+import * as cdk from 'aws-cdk-lib';
+import * as Lambda from 'aws-cdk-lib/aws-lambda'
+import * as awsgw from 'aws-cdk-lib/aws-apigateway'
 
-export class CdkWorkshopStack extends Stack {
-  constructor(scope: Construct, id: string, props?: StackProps) {
+export class CdkWorkshopStack extends cdk.Stack {
+  constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+  
+  // defines an AWS Lambda resource
+  const hello = new Lambda.Function(this, 'HelloHandler', {
+    runtime: Lambda.Runtime.NODEJS_16_X, // execution environment
+    code: Lambda.Code.fromAsset('lambda'), // code loaded from "lambda" directory
+    handler: 'hello.handler'  // file is "hello", function is "handler"
+  });
 
-    const queue = new sqs.Queue(this, 'CdkWorkshopQueue', {
-      visibilityTimeout: Duration.seconds(300)
-    });
-
-    const topic = new sns.Topic(this, 'CdkWorkshopTopic');
-
-    topic.addSubscription(new subs.SqsSubscription(queue));
-  }
+  // defines an API Gateway REST API resource backed by our "hello" function.
+  new awsgw.LambdaRestApi(this, 'Endpoint',{
+    handler: hello
+  });
+}
 }
